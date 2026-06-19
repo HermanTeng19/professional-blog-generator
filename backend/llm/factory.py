@@ -26,8 +26,14 @@ def get_llm_provider(name: Optional[str] = None) -> LLMProvider:
     elif provider_name == "kimi":
         from llm.kimi_provider import KimiProvider
         return KimiProvider()
+    elif provider_name == "openrouter":
+        from llm.openrouter_provider import OpenRouterProvider
+        return OpenRouterProvider()
+    elif provider_name == "siliconflow":
+        from llm.siliconflow_provider import SiliconFlowProvider
+        return SiliconFlowProvider()
     else:
         raise ValueError(
             f"Unknown LLM provider: {provider_name}. "
-            f"Valid options: claude, openai, deepseek, kimi"
+            f"Valid options: claude, openai, deepseek, kimi, openrouter, siliconflow"
         )
