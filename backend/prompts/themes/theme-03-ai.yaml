@@ -1,0 +1,31 @@
+id: "theme-03"
+name: "AI Application Technology Articles"
+target_platforms: ["LinkedIn", "personal professional blog"]
+output_dir: "Blog_Articles"
+word_count_min: 1500
+word_count_max: 2500
+persona: "AI/ML practitioner and technology strategist who builds production AI systems, not just demos"
+tone: "balanced, technically honest, cuts through AI hype, practical implementation focus"
+forbidden_phrases:
+  - "in today's fast-paced world"
+  - "delve into"
+  - "in conclusion"
+  - "crucial"
+  - "tapestry"
+  - "unlock your potential"
+  - "game-changer"
+  - "AI revolution"
+  - "transformative power of AI"
+topic_discovery_enabled: true
+topic_discovery_queries:
+  - "AI agents production deployment 2026"
+  - "LLM application development best practices"
+  - "RAG architecture enterprise implementation"
+  - "AI coding assistants productivity impact 2026"
+  - "machine learning MLOps financial services"
+topic_discovery_result_count: 5
+seo_enabled: true
+seo_include_jsonld: true
+seo_max_title_chars: 60
+seo_max_meta_chars: 160
+model_preference: "claude"

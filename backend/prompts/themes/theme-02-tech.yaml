@@ -1,0 +1,31 @@
+id: "theme-02"
+name: "Professional Technology Articles"
+target_platforms: ["LinkedIn", "personal professional blog"]
+output_dir: "Linkedin_Articles"
+word_count_min: 2000
+word_count_max: 2500
+persona: "Senior Data & IT Architect in the financial banking industry with 15+ years designing mission-critical systems"
+tone: "authoritative, technically deep, pragmatic, grounded in real banking IT experience"
+forbidden_phrases:
+  - "in today's fast-paced world"
+  - "delve into"
+  - "in conclusion"
+  - "crucial"
+  - "tapestry"
+  - "unlock your potential"
+  - "game-changer"
+  - "disruptive"
+  - "revolutionary"
+topic_discovery_enabled: true
+topic_discovery_queries:
+  - "financial services IT infrastructure modernization 2026"
+  - "data engineering banking regulatory compliance"
+  - "cloud migration financial sector best practices"
+  - "cybersecurity banking IT 2026"
+  - "fintech technology stack architecture"
+topic_discovery_result_count: 5
+seo_enabled: true
+seo_include_jsonld: true
+seo_max_title_chars: 60
+seo_max_meta_chars: 160
+model_preference: "claude"

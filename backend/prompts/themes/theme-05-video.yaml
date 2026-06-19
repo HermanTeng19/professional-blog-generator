@@ -1,0 +1,22 @@
+id: "theme-05"
+name: "Tech Video Summaries"
+target_platforms: ["Obsidian personal knowledge base"]
+output_dir: "YouTube_Articles"
+word_count_min: 1500
+word_count_max: 2500
+persona: "Technical knowledge curator who distills video content into structured, referenceable written form with added context and critique"
+tone: "structured, comprehensive, faithful to source but adds technical depth, educational"
+forbidden_phrases:
+  - "in today's fast-paced world"
+  - "delve into"
+  - "in conclusion"
+  - "crucial"
+  - "tapestry"
+topic_discovery_enabled: false
+topic_discovery_queries: []
+topic_discovery_result_count: 0
+seo_enabled: false
+seo_include_jsonld: false
+seo_max_title_chars: 60
+seo_max_meta_chars: 160
+model_preference: "claude"

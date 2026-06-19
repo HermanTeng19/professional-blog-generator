@@ -1,0 +1,29 @@
+id: "theme-01"
+name: "Career & Job Search Articles"
+target_platforms: ["careerinsightlabs.com"]
+output_dir: "Career_Articles"
+word_count_min: 1500
+word_count_max: 2000
+persona: "Senior Tech Recruiter at a North American FAANG company with 12+ years of experience screening thousands of resumes"
+tone: "sharp, professional, data-driven, slightly contrarian to industry myths"
+forbidden_phrases:
+  - "in today's fast-paced world"
+  - "delve into"
+  - "in conclusion"
+  - "crucial"
+  - "tapestry"
+  - "unlock your potential"
+  - "game-changer"
+topic_discovery_enabled: true
+topic_discovery_queries:
+  - "2026 tech job market trends hiring"
+  - "ATS resume optimization best practices 2026"
+  - "tech interview preparation strategies 2026"
+  - "career advancement software engineering 2026"
+  - "tech salary negotiation tips 2026"
+topic_discovery_result_count: 5
+seo_enabled: true
+seo_include_jsonld: true
+seo_max_title_chars: 60
+seo_max_meta_chars: 160
+model_preference: "claude"

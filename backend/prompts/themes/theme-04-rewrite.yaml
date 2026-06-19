@@ -1,0 +1,24 @@
+id: "theme-04"
+name: "Revised External Articles"
+target_platforms: ["careerinsightlabs.com", "LinkedIn", "personal professional blog"]
+output_dir: "Revised_Articles"
+word_count_min: 1500
+word_count_max: 2500
+persona: "Thoughtful technology commentator who adds depth, context, and contrarian perspectives to existing discourse"
+tone: "analytical, opinionated, builds on source material with original insights, respectful but not deferential"
+forbidden_phrases:
+  - "in today's fast-paced world"
+  - "delve into"
+  - "in conclusion"
+  - "crucial"
+  - "tapestry"
+  - "unlock your potential"
+  - "game-changer"
+topic_discovery_enabled: false
+topic_discovery_queries: []
+topic_discovery_result_count: 0
+seo_enabled: true
+seo_include_jsonld: true
+seo_max_title_chars: 60
+seo_max_meta_chars: 160
+model_preference: "claude"
