@@ -9,6 +9,7 @@ from prompts.manager import load_theme_config
 from pipeline.steps import discover_topics, deep_research, generate_article
 from output.file_manager import save_article as save_to_disk
 from models.schemas import LLMConfig, ResearchDossier
+from utils.youtube import extract_video_id, fetch_youtube_transcript
 
 
 async def run_pipeline(
@@ -45,12 +46,23 @@ async def run_pipeline(
 
         # Branch: themes 4-5 skip topic discovery, use source URL directly
         if source_url:
-            from search.factory import get_search_provider
-            search = get_search_provider()
-            try:
-                raw_content = await search.fetch_url(source_url)
-            except Exception:
-                raw_content = f"Could not fetch {source_url}"
+            # Detect YouTube URLs — extract transcript instead of raw HTML
+            video_id = extract_video_id(source_url)
+            if video_id:
+                await report("research", f"Extracting YouTube transcript for video {video_id}...", base_pct + 5)
+                try:
+                    raw_content = await fetch_youtube_transcript(source_url)
+                except Exception as e:
+                    raw_content = f"Failed to fetch YouTube transcript: {e}\n\nURL: {source_url}"
+                await report("research", f"Transcript extracted: {len(raw_content)} chars", base_pct + 20)
+            else:
+                from search.factory import get_search_provider
+                search = get_search_provider()
+                try:
+                    raw_content = await search.fetch_url(source_url)
+                except Exception:
+                    raw_content = f"Could not fetch {source_url}"
+                await report("research", f"Source content fetched: {len(raw_content)} chars", base_pct + 20)
 
             dossier = ResearchDossier(
                 angles=[],
@@ -58,7 +70,6 @@ async def run_pipeline(
                 expert_viewpoints=[],
                 raw_text=raw_content[:15000],
             )
-            await report("research", f"Source content fetched: {len(raw_content)} chars", base_pct + 20)
         else:
             # Standard flow: deep research on the topic
             dossier = await deep_research(topic, theme_config, llm_config=llm_config)
