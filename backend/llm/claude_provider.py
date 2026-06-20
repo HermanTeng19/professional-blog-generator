@@ -8,8 +8,10 @@ from llm.base import LLMProvider
 
 
 class ClaudeProvider(LLMProvider):
-    def __init__(self) -> None:
-        self.client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    def __init__(self, api_key=None, base_url=None, model=None):
+        self.api_key = api_key or settings.anthropic_api_key
+        self.model = model or "claude-sonnet-4-6"
+        self.client = AsyncAnthropic(api_key=self.api_key)
 
     async def generate(
         self,
@@ -23,7 +25,7 @@ class ClaudeProvider(LLMProvider):
         if stream_callback:
             full_text = ""
             async with self.client.messages.stream(
-                model="claude-sonnet-4-6",
+                model=self.model,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 system=system_prompt,
@@ -36,7 +38,7 @@ class ClaudeProvider(LLMProvider):
             return full_text
         else:
             response = await self.client.messages.create(
-                model="claude-sonnet-4-6",
+                model=self.model,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 system=system_prompt,

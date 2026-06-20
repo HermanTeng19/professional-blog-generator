@@ -54,11 +54,20 @@ class ResearchDossier(BaseModel):
     raw_text: str = ""  # For themes 4-5: source content dumped here
 
 
+# ── LLM Config (BYOK) ──
+class LLMConfig(BaseModel):
+    provider: str  # "deepseek" | "openrouter" | "siliconflow" | "claude" | "openai" | "kimi"
+    api_key: str
+    base_url: Optional[str] = None
+    model: Optional[str] = None
+
+
 # ── Generation ──
 class GenerateRequest(BaseModel):
     theme_id: str
     topics: list[str] = []          # Themes 1-3: selected topic titles
     source_url: Optional[str] = None   # Themes 4-5: article/video URL
+    llm_config: Optional[LLMConfig] = None  # BYOK: per-request provider override
 
 
 class JobStatus(BaseModel):

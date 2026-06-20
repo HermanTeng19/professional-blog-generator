@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SparklesIcon } from "lucide-react";
 
 import { startGeneration } from "@/lib/api-client";
-import type { ArticleResult, ThemeConfig, WizardStep } from "@/lib/types";
+import type { ArticleResult, LLMConfig, ThemeConfig, WizardStep } from "@/lib/types";
+import { loadLLMConfig, saveLLMConfig, clearLLMConfig } from "@/lib/llm-config-store";
 
 import ThemeSelector from "@/components/wizard/ThemeSelector";
 import TopicDiscovery from "@/components/wizard/TopicDiscovery";
@@ -27,6 +28,22 @@ export default function Home() {
   const [jobId, setJobId] = useState<string>("");
   const [results, setResults] = useState<ArticleResult[]>([]);
   const [genError, setGenError] = useState<string | null>(null);
+  const [llmConfig, setLLMConfig] = useState<LLMConfig | null>(null);
+
+  // Load BYOK config from localStorage on mount
+  useEffect(() => {
+    setLLMConfig(loadLLMConfig());
+  }, []);
+
+  const handleLLMConfigChange = useCallback((config: LLMConfig) => {
+    setLLMConfig(config);
+    saveLLMConfig(config);
+  }, []);
+
+  const handleLLMConfigClear = useCallback(() => {
+    setLLMConfig(null);
+    clearLLMConfig();
+  }, []);
 
   const currentStepIdx = STEPS.findIndex((s) => s.key === step);
 
@@ -54,6 +71,7 @@ export default function Home() {
         const id = await startGeneration({
           theme_id: theme.id,
           topics: selectedTopics,
+          llm_config: llmConfig ?? undefined,
         });
         setJobId(id);
       } catch (err) {
@@ -77,6 +95,7 @@ export default function Home() {
           theme_id: theme.id,
           topics: [],
           source_url: url,
+          llm_config: llmConfig ?? undefined,
         });
         setJobId(id);
       } catch (err) {
@@ -190,7 +209,12 @@ export default function Home() {
       {/* Main content */}
       <main className="flex justify-center">
         {step === "select-theme" && (
-          <ThemeSelector onNext={handleThemeSelected} />
+          <ThemeSelector
+            onNext={handleThemeSelected}
+            llmConfig={llmConfig}
+            onLLMConfigChange={handleLLMConfigChange}
+            onLLMConfigClear={handleLLMConfigClear}
+          />
         )}
 
         {step === "select-topics" && theme && (
@@ -199,6 +223,7 @@ export default function Home() {
               theme={theme}
               onBack={handleBackToTheme}
               onGenerate={handleTopicsGenerate}
+              llmConfig={llmConfig}
             />
           ) : (
             <UrlInput

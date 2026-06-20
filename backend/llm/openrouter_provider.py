@@ -8,16 +8,18 @@ from llm.base import LLMProvider
 
 
 class OpenRouterProvider(LLMProvider):
-    def __init__(self) -> None:
+    def __init__(self, api_key=None, base_url=None, model=None):
+        self.api_key = api_key or settings.openrouter_api_key
+        self.base_url = base_url or settings.openrouter_base_url
+        self.model = model or settings.openrouter_model
         self.client = AsyncOpenAI(
-            api_key=settings.openrouter_api_key,
-            base_url=settings.openrouter_base_url,
+            api_key=self.api_key,
+            base_url=self.base_url,
+            default_headers={
+                "HTTP-Referer": "https://github.com/professional-blog-generator",
+                "X-Title": "Professional Blog Generator",
+            },
         )
-        # Optional: set HTTP-Referer and X-Title headers for OpenRouter ranking
-        self.client.default_headers = {
-            "HTTP-Referer": "https://github.com/professional-blog-generator",
-            "X-Title": "Professional Blog Generator",
-        }
 
     async def generate(
         self,
@@ -31,7 +33,7 @@ class OpenRouterProvider(LLMProvider):
         if stream_callback:
             full_text = ""
             stream = await self.client.chat.completions.create(
-                model=settings.openrouter_model,
+                model=self.model,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 messages=[
@@ -48,7 +50,7 @@ class OpenRouterProvider(LLMProvider):
             return full_text
         else:
             response = await self.client.chat.completions.create(
-                model=settings.openrouter_model,
+                model=self.model,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 messages=[

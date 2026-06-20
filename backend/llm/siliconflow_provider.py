@@ -8,10 +8,13 @@ from llm.base import LLMProvider
 
 
 class SiliconFlowProvider(LLMProvider):
-    def __init__(self) -> None:
+    def __init__(self, api_key=None, base_url=None, model=None):
+        self.api_key = api_key or settings.siliconflow_api_key
+        self.base_url = base_url or settings.siliconflow_base_url
+        self.model = model or settings.siliconflow_model
         self.client = AsyncOpenAI(
-            api_key=settings.siliconflow_api_key,
-            base_url=settings.siliconflow_base_url,
+            api_key=self.api_key,
+            base_url=self.base_url,
         )
 
     async def generate(
@@ -26,7 +29,7 @@ class SiliconFlowProvider(LLMProvider):
         if stream_callback:
             full_text = ""
             stream = await self.client.chat.completions.create(
-                model=settings.siliconflow_model,
+                model=self.model,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 messages=[
@@ -43,7 +46,7 @@ class SiliconFlowProvider(LLMProvider):
             return full_text
         else:
             response = await self.client.chat.completions.create(
-                model=settings.siliconflow_model,
+                model=self.model,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 messages=[

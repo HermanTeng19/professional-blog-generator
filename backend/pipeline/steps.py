@@ -11,10 +11,10 @@ from prompts.manager import load_system_prompt, render_prompt
 from models.schemas import Topic, ResearchDossier, ResearchAngle, SourceItem
 
 
-async def discover_topics(theme_config) -> list[Topic]:
+async def discover_topics(theme_config, llm_config=None) -> list[Topic]:
     """Step 1: Search for trending topics and enrich with LLM analysis."""
     search = get_search_provider()
-    llm = get_llm_provider()
+    llm = get_llm_provider(llm_config=llm_config)
 
     all_results = []
     seen_urls = set()
@@ -71,9 +71,9 @@ Output ONLY the JSON array, no other text."""
     return topics
 
 
-async def deep_research(topic_title: str, theme_config) -> ResearchDossier:
+async def deep_research(topic_title: str, theme_config, llm_config=None) -> ResearchDossier:
     """Step 2: Deep-dive research on a single topic."""
-    llm = get_llm_provider()
+    llm = get_llm_provider(llm_config=llm_config)
     search = get_search_provider()
 
     # Decompose topic into research angles
@@ -152,9 +152,16 @@ async def generate_article(
     dossier: ResearchDossier,
     theme_config,
     stream_callback=None,
+    llm_config=None,
 ) -> tuple[str, str, str, str]:
     """Step 3: Generate the article using the LLM with research dossier injected."""
-    llm = get_llm_provider(theme_config.model_preference)
+    if llm_config:
+        llm = get_llm_provider(llm_config=llm_config)
+    else:
+        try:
+            llm = get_llm_provider(theme_config.model_preference)
+        except Exception:
+            llm = get_llm_provider()  # fall back to settings default
 
     # Build research context string
     research_context = _format_dossier(dossier)

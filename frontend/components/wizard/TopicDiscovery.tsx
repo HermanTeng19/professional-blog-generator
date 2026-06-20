@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Loader2Icon,
   TrendingUpIcon,
@@ -9,14 +9,18 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   AlertCircleIcon,
+  SparklesIcon,
+  SearchIcon,
+  BarChart3Icon,
+  BrainIcon,
+  TargetIcon,
 } from "lucide-react";
 
 import { discoverTopics } from "@/lib/api-client";
-import type { Topic, ThemeConfig } from "@/lib/types";
+import type { Topic, ThemeConfig, LLMConfig } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 
 function TrafficIcon({ level }: { level: string }) {
   switch (level) {
@@ -33,24 +37,46 @@ interface TopicDiscoveryProps {
   theme: ThemeConfig;
   onBack: () => void;
   onGenerate: (topics: string[]) => void;
+  llmConfig: LLMConfig | null;
 }
+
+const STATUS_STEPS = [
+  { icon: SearchIcon, text: "Scanning trending topics and discussions..." },
+  { icon: BarChart3Icon, text: "Analyzing search volume and traffic potential..." },
+  { icon: BrainIcon, text: "Generating topic suggestions with AI..." },
+  { icon: TargetIcon, text: "Evaluating relevance and ranking results..." },
+  { icon: SparklesIcon, text: "Finalizing recommendations..." },
+];
 
 export default function TopicDiscovery({
   theme,
   onBack,
   onGenerate,
+  llmConfig,
 }: TopicDiscoveryProps) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusIndex, setStatusIndex] = useState(0);
+  const loadingStartRef = useRef(Date.now());
 
+  // Fetch topics on mount
   useEffect(() => {
-    discoverTopics(theme.id)
+    discoverTopics(theme.id, llmConfig ?? undefined)
       .then((data) => setTopics(data.topics))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [theme.id]);
+
+  // Cycle status messages every 2.2s while loading
+  useEffect(() => {
+    if (!loading) return;
+    const interval = setInterval(() => {
+      setStatusIndex((prev) => (prev + 1) % STATUS_STEPS.length);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const toggleTopic = (title: string) => {
     setSelected((prev) => {
@@ -61,23 +87,60 @@ export default function TopicDiscovery({
     });
   };
 
-  // Loading skeleton
+  // Loading — animated progress bar
   if (loading) {
+    const CurrentIcon = STATUS_STEPS[statusIndex].icon;
+    const elapsed = Math.floor((Date.now() - loadingStartRef.current) / 1000);
+
     return (
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle>Discovering Topics</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Loader2Icon className="size-5 animate-spin text-primary" />
+            Discovering Topics
+          </CardTitle>
           <CardDescription>
-            Scanning trending topics for <strong>{theme.name}</strong>...
+            Analyzing trending topics for{" "}
+            <strong>{theme.name}</strong>
+            {elapsed > 5 && (
+              <span className="text-muted-foreground">
+                {" "}&mdash; still working, good topics take time&hellip;
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-16 animate-pulse rounded-lg bg-muted"
-            />
-          ))}
+
+        <CardContent className="space-y-5">
+          {/* Indeterminate progress bar */}
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div className="absolute inset-0 animate-indeterminate-bar">
+              <div className="h-full w-2/5 rounded-full bg-primary" />
+            </div>
+          </div>
+
+          {/* Cycling status step */}
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/20 px-4 py-3">
+            <CurrentIcon className="size-5 shrink-0 text-primary" />
+            <span className="text-sm font-medium">
+              {STATUS_STEPS[statusIndex].text}
+            </span>
+          </div>
+
+          {/* Step indicators */}
+          <div className="flex items-center justify-center gap-1.5">
+            {STATUS_STEPS.map((step, i) => (
+              <div
+                key={i}
+                className={`size-1.5 rounded-full transition-all duration-500 ${
+                  i === statusIndex
+                    ? "bg-primary scale-125"
+                    : i < statusIndex
+                    ? "bg-primary/30"
+                    : "bg-muted-foreground/20"
+                }`}
+              />
+            ))}
+          </div>
         </CardContent>
       </Card>
     );
@@ -101,7 +164,9 @@ export default function TopicDiscovery({
             onClick={() => {
               setLoading(true);
               setError(null);
-              discoverTopics(theme.id)
+              setStatusIndex(0);
+              loadingStartRef.current = Date.now();
+              discoverTopics(theme.id, llmConfig ?? undefined)
                 .then((data) => setTopics(data.topics))
                 .catch((err) => setError(err.message))
                 .finally(() => setLoading(false));

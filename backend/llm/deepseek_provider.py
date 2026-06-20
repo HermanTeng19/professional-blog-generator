@@ -8,10 +8,18 @@ from llm.base import LLMProvider
 
 
 class DeepSeekProvider(LLMProvider):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None,
+    ) -> None:
+        self.model = model or "deepseek-v4-pro"
+        self.api_key = api_key or settings.deepseek_api_key
+        self.base_url = base_url or settings.deepseek_base_url
         self.client = AsyncOpenAI(
-            api_key=settings.deepseek_api_key,
-            base_url=settings.deepseek_base_url,
+            api_key=self.api_key,
+            base_url=self.base_url,
         )
 
     async def generate(
@@ -26,7 +34,7 @@ class DeepSeekProvider(LLMProvider):
         if stream_callback:
             full_text = ""
             stream = await self.client.chat.completions.create(
-                model="deepseek-v4-pro",
+                model=self.model,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 messages=[
@@ -43,7 +51,7 @@ class DeepSeekProvider(LLMProvider):
             return full_text
         else:
             response = await self.client.chat.completions.create(
-                model="deepseek-v4-pro",
+                model=self.model,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 messages=[

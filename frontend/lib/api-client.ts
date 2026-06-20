@@ -5,6 +5,7 @@ import type {
   JobStatus,
   ArticleListItem,
   ArticleDetail,
+  LLMConfig,
 } from "./types";
 
 const BASE_URL =
@@ -47,11 +48,19 @@ export async function fetchThemes(): Promise<ThemeConfig[]> {
 
 /** Run topic discovery for a theme. */
 export async function discoverTopics(
-  themeId: string
+  themeId: string,
+  llmConfig?: LLMConfig
 ): Promise<{ topics: Topic[] }> {
   return request<TopicsResponse>(
     `/api/themes/${encodeURIComponent(themeId)}/discover`,
-    { method: "POST" }
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        theme_id: themeId,
+        llm_config: llmConfig ?? null,
+      }),
+    }
   );
 }
 
@@ -68,6 +77,7 @@ export async function startGeneration(
         theme_id: genRequest.theme_id,
         topics: genRequest.topics,
         source_url: genRequest.source_url ?? null,
+        llm_config: genRequest.llm_config ?? null,
       }),
     }
   );

@@ -19,4 +19,4 @@ seo_enabled: false
 seo_include_jsonld: false
 seo_max_title_chars: 60
 seo_max_meta_chars: 160
-model_preference: "claude"
+model_preference: "deepseek"

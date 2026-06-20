@@ -16,7 +16,7 @@ from pipeline.engine import run_pipeline
 from pipeline.steps import discover_topics, deep_research
 from jobs.queue import store_job, get_job, update_job
 from output.file_manager import list_articles, read_article, update_article
-from models.schemas import GenerateRequest, ArticleUpdate
+from models.schemas import GenerateRequest, ArticleUpdate, LLMConfig
 
 app = FastAPI(title="Professional Blog Generator", version="1.0.0")
 
@@ -39,10 +39,11 @@ async def get_themes():
 # ── Topic Discovery ──
 class DiscoverRequest(BaseModel):
     theme_id: str
+    llm_config: Optional[LLMConfig] = None
 
 
 @app.post("/api/themes/{theme_id}/discover")
-async def discover_themes_endpoint(theme_id: str):
+async def discover_themes_endpoint(theme_id: str, body: DiscoverRequest = DiscoverRequest(theme_id="")):
     """Discover 5 trending topics for a theme."""
     try:
         config = load_theme_config(theme_id)
@@ -51,7 +52,7 @@ async def discover_themes_endpoint(theme_id: str):
                 400,
                 f"Theme {theme_id} does not support topic discovery. Use URL input instead.",
             )
-        topics = await discover_topics(config)
+        topics = await discover_topics(config, llm_config=body.llm_config)
         return {"topics": [t.model_dump() for t in topics]}
     except FileNotFoundError:
         raise HTTPException(404, f"Theme not found: {theme_id}")
@@ -60,6 +61,7 @@ async def discover_themes_endpoint(theme_id: str):
 # ── Research ──
 class ResearchRequest(BaseModel):
     topic: str
+    llm_config: Optional[LLMConfig] = None
 
 
 @app.post("/api/themes/{theme_id}/research")
@@ -67,7 +69,7 @@ async def research_topic(theme_id: str, body: ResearchRequest):
     """Deep research on a single topic."""
     try:
         config = load_theme_config(theme_id)
-        dossier = await deep_research(body.topic, config)
+        dossier = await deep_research(body.topic, config, llm_config=body.llm_config)
         return {"dossier": dossier.model_dump()}
     except FileNotFoundError:
         raise HTTPException(404, f"Theme not found: {theme_id}")
@@ -117,6 +119,7 @@ async def _execute_pipeline(job_id: str, theme_id: str, body: GenerateRequest):
             topics=body.topics,
             source_url=body.source_url,
             progress_callback=progress_callback,
+            llm_config=body.llm_config,
         )
         update_job(job_id, {
             "status": "completed",

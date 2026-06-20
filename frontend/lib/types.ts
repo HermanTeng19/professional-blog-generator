@@ -48,11 +48,29 @@ export interface ResearchDossier {
   raw_text: string;
 }
 
+/** ── BYOK ── */
+export interface LLMConfig {
+  provider: string;
+  api_key: string;
+  base_url?: string;
+  model?: string;
+}
+
+export const LLM_PROVIDER_DEFAULTS: Record<string, { label: string; baseUrl: string; model: string }> = {
+  deepseek:    { label: "DeepSeek V4 Pro",       baseUrl: "https://api.deepseek.com",        model: "deepseek-v4-pro" },
+  openrouter:  { label: "OpenRouter",             baseUrl: "https://openrouter.ai/api/v1",     model: "anthropic/claude-sonnet-4-6" },
+  siliconflow: { label: "SiliconFlow",            baseUrl: "https://api.siliconflow.cn/v1",    model: "deepseek-ai/DeepSeek-V3" },
+  claude:      { label: "Claude (Anthropic)",     baseUrl: "",                                 model: "claude-sonnet-4-6" },
+  openai:      { label: "OpenAI GPT-4o",          baseUrl: "",                                 model: "gpt-4o" },
+  kimi:        { label: "Kimi K2 (Moonshot)",     baseUrl: "https://api.moonshot.cn/v1",       model: "kimi-k2" },
+};
+
 /** ── Generation ── */
 export interface GenerateRequest {
   theme_id: string;
   topics: string[];
   source_url?: string;
+  llm_config?: LLMConfig;
 }
 
 export interface JobStatus {

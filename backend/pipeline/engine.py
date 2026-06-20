@@ -8,7 +8,7 @@ from typing import Callable, Awaitable, Optional
 from prompts.manager import load_theme_config
 from pipeline.steps import discover_topics, deep_research, generate_article
 from output.file_manager import save_article as save_to_disk
-from models.schemas import ResearchDossier
+from models.schemas import LLMConfig, ResearchDossier
 
 
 async def run_pipeline(
@@ -16,6 +16,7 @@ async def run_pipeline(
     topics: list[str],
     source_url: Optional[str] = None,
     progress_callback: Optional[Callable[[str, str, int], Awaitable[None]]] = None,
+    llm_config: Optional[LLMConfig] = None,
 ) -> list[dict]:
     """Execute the full 4-step pipeline for each topic.
 
@@ -35,8 +36,10 @@ async def run_pipeline(
         if progress_callback:
             await progress_callback(step, message, pct)
 
-    total = len(topics) if topics else 1
-    for idx, topic in enumerate(topics):
+    # Normalize: for URL-based themes with empty topics, generate one article from the URL
+    work_items = topics if topics else [source_url or "Untitled"]
+    total = len(work_items)
+    for idx, topic in enumerate(work_items):
         base_pct = int((idx / total) * 100)
         await report("search", f"Researching: {topic[:80]}...", base_pct + 5)
 
@@ -58,7 +61,7 @@ async def run_pipeline(
             await report("research", f"Source content fetched: {len(raw_content)} chars", base_pct + 20)
         else:
             # Standard flow: deep research on the topic
-            dossier = await deep_research(topic, theme_config)
+            dossier = await deep_research(topic, theme_config, llm_config=llm_config)
             await report("research", f"Research complete: {len(dossier.angles)} angles, {len(dossier.statistics)} stats", base_pct + 25)
 
         # Step 3: Generate
@@ -72,6 +75,7 @@ async def run_pipeline(
             dossier=dossier,
             theme_config=theme_config,
             stream_callback=None,  # Full response, non-streaming in pipeline
+            llm_config=llm_config,
         )
 
         await report("generate", "Article draft complete", base_pct + 70)

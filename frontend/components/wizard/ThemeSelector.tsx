@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2Icon, ChevronRightIcon, PaletteIcon } from "lucide-react";
 
 import { fetchThemes } from "@/lib/api-client";
-import type { ThemeConfig } from "@/lib/types";
+import type { ThemeConfig, LLMConfig } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -14,12 +14,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import LLMSettings from "@/components/wizard/LLMSettings";
 
 interface ThemeSelectorProps {
   onNext: (theme: ThemeConfig) => void;
+  llmConfig: LLMConfig | null;
+  onLLMConfigChange: (config: LLMConfig) => void;
+  onLLMConfigClear: () => void;
 }
 
-export default function ThemeSelector({ onNext }: ThemeSelectorProps) {
+export default function ThemeSelector({
+  onNext,
+  llmConfig,
+  onLLMConfigChange,
+  onLLMConfigClear,
+}: ThemeSelectorProps) {
   const [themes, setThemes] = useState<ThemeConfig[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -77,10 +86,19 @@ export default function ThemeSelector({ onNext }: ThemeSelectorProps) {
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
-        <CardTitle>Choose a Theme</CardTitle>
-        <CardDescription>
-          Select a content theme to generate blog articles for.
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Choose a Theme</CardTitle>
+            <CardDescription>
+              Select a content theme to generate blog articles for.
+            </CardDescription>
+          </div>
+          <LLMSettings
+            config={llmConfig}
+            onChange={onLLMConfigChange}
+            onClear={onLLMConfigClear}
+          />
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -88,12 +106,20 @@ export default function ThemeSelector({ onNext }: ThemeSelectorProps) {
           <label className="text-sm font-medium">Theme</label>
           <Select value={selectedId} onValueChange={(v) => setSelectedId(v ?? "")}>
             <SelectTrigger className="w-full">
-              <SelectValue />
+              <SelectValue
+                render={
+                  <span>
+                    {selectedId && themes.find((t) => t.id === selectedId)
+                      ? `${selectedId}: ${themes.find((t) => t.id === selectedId)!.name}`
+                      : "Select theme..."}
+                  </span>
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               {themes.map((theme) => (
                 <SelectItem key={theme.id} value={theme.id}>
-                  {theme.name}
+                  {theme.id}: {theme.name}
                 </SelectItem>
               ))}
             </SelectContent>

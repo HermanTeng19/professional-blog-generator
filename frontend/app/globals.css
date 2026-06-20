@@ -209,3 +209,17 @@
   border-top: 1px solid var(--border);
   margin: 2em 0;
 }
+
+/* ── Indeterminate progress bar ── */
+@keyframes indeterminate-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+@theme inline {
+  --animate-indeterminate-bar: indeterminate-bar 1.6s ease-in-out infinite;
+}
