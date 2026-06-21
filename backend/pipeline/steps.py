@@ -11,6 +11,77 @@ from prompts.manager import load_system_prompt, render_prompt
 from models.schemas import Topic, ResearchDossier, ResearchAngle, SourceItem
 
 
+def _safe_parse_json(text: str, expect_array: bool = True) -> Optional[list | dict]:
+    """Robust JSON extraction from LLM responses.
+
+    Handles common LLM output issues:
+    - Markdown code fences (```json ... ```)
+    - Trailing commas before ] or }
+    - Greedy regex capturing too much
+    - Extra text before/after the JSON structure
+
+    Returns parsed JSON (list or dict), or None if all attempts fail.
+    """
+    if not text or not text.strip():
+        return None
+
+    cleaned = text.strip()
+
+    # 1. Strip markdown code fences
+    fence_match = re.match(r"```(?:json)?\s*\n(.*?)```", cleaned, re.DOTALL)
+    if fence_match:
+        cleaned = fence_match.group(1).strip()
+
+    # 2. Try direct parse first (LLM followed instructions perfectly)
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+
+    # 3. Extract JSON structure via regex (use non-greedy for array)
+    pattern = r"\[.*?\]" if expect_array else r"\{.*?\}"
+    match = re.search(pattern, cleaned, re.DOTALL)
+    if not match:
+        # Fallback: try the other shape
+        alt_pattern = r"\{.*?\}" if expect_array else r"\[.*?\]"
+        match = re.search(alt_pattern, cleaned, re.DOTALL)
+    if match:
+        extracted = match.group(0)
+    else:
+        # Last resort: try the whole text
+        extracted = cleaned
+
+    # 4. Try parsing the extracted segment
+    try:
+        return json.loads(extracted)
+    except json.JSONDecodeError:
+        pass
+
+    # 5. Apply fixes for common LLM JSON mistakes
+    fixed = re.sub(r",\s*([}\]])", r"\1", extracted)  # Remove trailing commas
+    fixed = re.sub(r"[“”]", '"', fixed)      # Smart quotes → straight quotes
+    fixed = re.sub(r"[‘’]", "'", fixed)      # Smart single quotes
+    fixed = re.sub(r"[–—]", "-", fixed)      # En/em dashes → hyphen
+
+    try:
+        return json.loads(fixed)
+    except json.JSONDecodeError:
+        pass
+
+    # 6. Try to fix truncated JSON by closing open brackets
+    # Count brackets and close them
+    open_braces = fixed.count("{") - fixed.count("}")
+    open_brackets = fixed.count("[") - fixed.count("]")
+    suffix = ("}" * open_braces) + ("]" * open_brackets)
+    if suffix:
+        try:
+            return json.loads(fixed + suffix)
+        except json.JSONDecodeError:
+            pass
+
+    return None
+
+
 async def discover_topics(theme_config, llm_config=None) -> list[Topic]:
     """Step 1: Search for trending topics and enrich with LLM analysis."""
     search = get_search_provider()
@@ -52,12 +123,19 @@ Output ONLY the JSON array, no other text."""
         temperature=0.3,
     )
 
-    # Parse JSON from response
-    json_match = re.search(r"\[.*\]", response, re.DOTALL)
-    if json_match:
-        topics_data = json.loads(json_match.group(0))
-    else:
-        topics_data = json.loads(response)
+    # Parse JSON from response — robust against malformed LLM output
+    topics_data = _safe_parse_json(response, expect_array=True)
+    if topics_data is None:
+        # Fallback: build basic topics from search result titles
+        topics_data = []
+        for r in all_results[:theme_config.topic_discovery_result_count]:
+            topics_data.append({
+                "title": r.title,
+                "description": r.snippet,
+                "pain_point": "Unknown",
+                "traffic_potential": "medium",
+                "source_urls": [r.url],
+            })
 
     topics = []
     for t in topics_data[:theme_config.topic_discovery_result_count]:
@@ -89,8 +167,10 @@ Return valid JSON array of strings (the search queries). Output ONLY JSON array.
         user_prompt=angle_prompt,
         temperature=0.3,
     )
-    json_match = re.search(r"\[.*\]", response, re.DOTALL)
-    queries = json.loads(json_match.group(0)) if json_match else json.loads(response)
+    queries = _safe_parse_json(response, expect_array=True)
+    if queries is None:
+        # Fallback: use topic title as a single search query
+        queries = [topic_title]
 
     # Search each angle
     angles = []
@@ -137,8 +217,9 @@ Output ONLY JSON, no other text."""
         user_prompt=extract_prompt,
         temperature=0.2,
     )
-    json_match = re.search(r"\{.*\}", response, re.DOTALL)
-    extracted = json.loads(json_match.group(0)) if json_match else {"statistics": [], "expert_viewpoints": []}
+    extracted = _safe_parse_json(response, expect_array=False)
+    if extracted is None:
+        extracted = {"statistics": [], "expert_viewpoints": []}
 
     return ResearchDossier(
         angles=angles,

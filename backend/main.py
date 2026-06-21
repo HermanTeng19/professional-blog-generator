@@ -56,6 +56,10 @@ async def discover_themes_endpoint(theme_id: str, body: DiscoverRequest = Discov
         return {"topics": [t.model_dump() for t in topics]}
     except FileNotFoundError:
         raise HTTPException(404, f"Theme not found: {theme_id}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Topic discovery failed: {str(e)}")
 
 
 # ── Research ──
